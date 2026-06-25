@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# מתכונים — Recipes PWA
 
-## Getting Started
+אפליקציית מתכונים אישית בעברית, RTL, mobile-first, הניתנת להתקנה למסך הבית (PWA).
 
-First, run the development server:
+A clean, lightweight Hebrew (RTL) recipe manager. Recipes are stored locally on
+the device (IndexedDB). Optional Supabase email auth is supported.
+
+## Stack
+
+- **Next.js 16** (App Router, static export)
+- **React 19 + TypeScript**
+- **Tailwind CSS v4**
+- **IndexedDB** (`idb`) for recipes + photos — persists across refresh
+- **Supabase** email auth (optional)
+- **lz-string** for self-contained share links (no backend needed)
+
+## Features
+
+- מסך בית: "המתכונים המובילים שלי" (לפי מספר ההכנות) + כפתורי השראה
+- רשימת מתכונים עם חיפוש לפי שם וסינון לפי קטגוריה
+- עמוד מתכון: מצרכים כבועות, "מצרכים להמשך הבישול", שלבי הכנה ממוספרים, סרטון,
+  גלריית תמונות, הערות, דירוג 1–5, מונה "הכנתי את המתכון"
+- טופס הוספה/עריכה ידידותי למובייל
+- גיבוי/שחזור ל-JSON
+- שיתוף מתכון בקישור עם תצוגה מקדימה וכפתור "שמור למתכונים שלי"
+- אימות מייל עם Supabase (אופציונלי)
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build (static export → `out/`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+## Environment variables
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env.local` and fill in if you want auth:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon public key |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app works fully without these — recipes stay local.
 
-## Deploy on Vercel
+## Deploy to Netlify
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push this repo to GitHub.
+2. In Netlify: **New site from Git** → pick the repo.
+3. Build command `npm run build`, publish directory `out` (already in
+   `netlify.toml`).
+4. Add the two `NEXT_PUBLIC_SUPABASE_*` env vars if using auth.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes / next stage
+
+- Recipe data is local-only for now; Supabase is wired for auth and ready for
+  future cloud sync/sharing.
+- Share links embed the recipe (compressed in the URL). Photos are included
+  only when the link stays small; full photo sharing can be completed later.
