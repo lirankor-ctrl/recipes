@@ -17,7 +17,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <Link
       href={`/recipe/?id=${recipe.id}`}
-      className="block bg-surface rounded-[var(--radius-app)] border border-border overflow-hidden active:scale-[0.99] transition-transform"
+      className="block bg-surface rounded-[var(--radius-app)] border border-border overflow-hidden shadow-sm shadow-primary/5 active:scale-[0.99] transition-transform"
     >
       <div className="aspect-[16/10] bg-primary-soft relative">
         {photo ? (

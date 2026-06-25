@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   RECIPE_CATEGORIES,
@@ -45,7 +45,16 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
   const [saving, setSaving] = useState(false);
   const isEdit = Boolean(initial);
 
+  // DOM id of a freshly added field to focus once it has rendered.
+  const [focusFieldId, setFocusFieldId] = useState<string | null>(null);
+
   const patch = (p: Partial<Recipe>) => setR((prev) => ({ ...prev, ...p }));
+
+  useEffect(() => {
+    if (!focusFieldId) return;
+    document.getElementById(focusFieldId)?.focus();
+    setFocusFieldId(null);
+  }, [focusFieldId]);
 
   // ---- Photos ----
   async function onAddPhotos(files: FileList | null) {
@@ -82,6 +91,8 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
   function addIngredient(key: "ingredients" | "laterIngredients") {
     const item: Ingredient = { id: uid(), name: "", quantity: "" };
     patch({ [key]: [...r[key], item] } as Partial<Recipe>);
+    // focus the new ingredient's name input right away
+    setFocusFieldId(`ingname-${item.id}`);
   }
   function updateIngredient(
     key: "ingredients" | "laterIngredients",
@@ -104,6 +115,8 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
   function addStep() {
     const s: PreparationStep = { id: uid(), text: "" };
     patch({ steps: [...r.steps, s] });
+    // focus the new step's text field right away
+    setFocusFieldId(`step-${s.id}`);
   }
   function updateStep(id: string, text: string) {
     patch({ steps: r.steps.map((s) => (s.id === id ? { ...s, text } : s)) });
@@ -241,6 +254,7 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
                 {idx + 1}
               </span>
               <textarea
+                id={`step-${s.id}`}
                 value={s.text}
                 onChange={(e) => updateStep(s.id, e.target.value)}
                 placeholder={`שלב ${idx + 1}`}
@@ -380,6 +394,7 @@ function IngredientEditor({
         {items.map((i) => (
           <div key={i.id} className="flex gap-2">
             <input
+              id={`ingname-${i.id}`}
               value={i.name}
               onChange={(e) => onUpdate(i.id, "name", e.target.value)}
               placeholder="מצרך"

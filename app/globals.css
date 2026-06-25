@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
-/* ===== Theme tokens ===== */
+/* ===== Theme tokens (soft light purple) ===== */
 :root {
-  --background: #faf7f2; /* warm off-white */
-  --surface: #ffffff;
-  --foreground: #2a211b;
-  --muted: #8a7d72;
-  --primary: #e8743b; /* warm orange */
-  --primary-soft: #fff1e8;
-  --accent: #4a8b6f; /* herb green for later-stage section */
-  --accent-soft: #eaf4ef;
-  --border: #ece5dc;
-  --ring: #f0c3a6;
+  --background: #faf7ff; /* page background */
+  --surface: #ffffff; /* cards */
+  --foreground: #2a2540; /* deep readable plum-tinted text */
+  --muted: #8b82a6; /* muted lavender-gray */
+  --primary: #8b5cf6; /* violet */
+  --primary-hover: #7c3aed; /* darker violet for hover/active */
+  --primary-soft: #f5f3ff; /* light accent background */
+  --selected: #ddd6fe; /* selected states */
+  --accent: #7c3aed; /* later-stage accent (deeper violet) */
+  --accent-soft: #ede9fe; /* later-stage soft background */
+  --border: #e9ddfc; /* borders */
+  --ring: #c4b5fd; /* focus ring */
 }
 
 @theme inline {
@@ -20,7 +22,9 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
+  --color-selected: var(--selected);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-border: var(--border);

@@ -58,7 +58,7 @@ export function PrimaryLink({
   return (
     <Link
       href={href}
-      className={`${btnBase} ${btnSize} bg-primary text-white active:bg-primary/90`}
+      className={`${btnBase} ${btnSize} bg-primary text-white shadow-sm shadow-primary/25 hover:bg-primary-hover active:bg-primary-hover`}
     >
       {children}
     </Link>
@@ -66,13 +66,13 @@ export function PrimaryLink({
 }
 
 export function primaryBtnClass(extra = "") {
-  return `${btnBase} ${btnSize} bg-primary text-white active:bg-primary/90 ${extra}`;
+  return `${btnBase} ${btnSize} bg-primary text-white shadow-sm shadow-primary/25 hover:bg-primary-hover active:bg-primary-hover ${extra}`;
 }
 
 export function softBtnClass(extra = "") {
-  return `${btnBase} ${btnSize} bg-primary-soft text-primary active:bg-primary-soft/70 ${extra}`;
+  return `${btnBase} ${btnSize} bg-primary-soft text-primary hover:bg-selected active:bg-selected ${extra}`;
 }
 
 export function outlineBtnClass(extra = "") {
-  return `${btnBase} ${btnSize} bg-surface border border-border text-foreground active:bg-background ${extra}`;
+  return `${btnBase} ${btnSize} bg-surface border border-border text-foreground hover:bg-primary-soft active:bg-primary-soft ${extra}`;
 }
