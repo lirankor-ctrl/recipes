@@ -193,7 +193,7 @@ function RecipeDetail() {
           rel="noopener noreferrer"
           className={softBtnClass("w-full")}
         >
-          ▶️ פתח סרטון מתכון
+          🔗 פתח קישור למתכון
         </a>
       )}
 

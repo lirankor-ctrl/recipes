@@ -325,8 +325,8 @@ export default function RecipeForm({
         </div>
       </Field>
 
-      {/* Video */}
-      <Field label="קישור לסרטון">
+      {/* Recipe link (video or website) */}
+      <Field label="קישור למתכון (סרטון או אתר)">
         <input
           value={r.videoUrl}
           onChange={(e) => patch({ videoUrl: e.target.value })}

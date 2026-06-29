@@ -109,14 +109,14 @@ export default function HomePage() {
           className="flex items-center gap-4 bg-primary text-white rounded-[var(--radius-app)] p-5 shadow-sm shadow-primary/25 active:bg-primary-hover transition-colors"
         >
           <span className="text-3xl" aria-hidden="true">
-            📹
+            🔗
           </span>
           <span className="flex-1">
             <span className="block font-bold text-lg leading-tight">
-              הוסף מתכון מסרטון
+              הוסף מתכון מקישור
             </span>
             <span className="block text-sm text-white/80 mt-0.5">
-              הדבק קישור ליוטיוב — אנחנו נתחיל בשבילך
+              יוטיוב, אינסטגרם, טיקטוק, פייסבוק או אתר מתכונים
             </span>
           </span>
           <span className="text-2xl" aria-hidden="true">

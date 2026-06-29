@@ -1,78 +1,75 @@
 // Recipe import orchestration.
 //
-// `RecipeImportService` turns a pasted URL into a structured result the UI can
-// act on: which provider, whether full auto-import is supported (YouTube), the
-// resolved metadata, and a friendly Hebrew message when relevant.
-// `buildImportedRecipe` maps metadata (+ an optional AI draft) into a fresh,
-// fully-editable Recipe. Nothing is ever persisted here.
+// `RecipeImportService` turns a pasted URL (from anywhere) into a structured
+// result the UI can act on: detected provider, resolved metadata, and a
+// friendly Hebrew message when relevant. `buildImportedRecipe` maps metadata
+// (+ an optional AI draft) into a fresh, fully-editable Recipe. Nothing is
+// ever persisted here, and no ingredients/steps are ever fabricated.
 
-import { detectVideoProvider, type VideoProvider } from "./video";
-import { resolveVideoMetadata, type VideoMetadata } from "./videoMetadata";
+import {
+  detectProvider,
+  resolveRecipeMetadata,
+  type ImportStatus,
+  type RecipeMetadata,
+} from "./recipeProviders";
 import type { AIRecipeDraft } from "./aiRecipeDraft";
-import type { Recipe } from "./types";
+import type { Recipe, RecipePhoto } from "./types";
 import { now, uid } from "./utils";
 
 export const IMPORT_MESSAGES = {
   noTitle:
-    "מצאנו את הסרטון, אך לא הצלחנו למשוך את שם המתכון. אפשר להוסיף שם ידנית.",
-  notYouTube:
-    "בשלב זה ייבוא אוטומטי מלא נתמך בעיקר מיוטיוב. אפשר להמשיך למלא את המתכון ידנית.",
+    "מצאנו את הקישור, אך לא הצלחנו למשוך שם למתכון. אפשר להוסיף שם ידנית.",
+  blocked:
+    "מצאנו את הקישור, אבל האתר לא מאפשר למשוך את כל הפרטים. אפשר לשמור את הקישור ולהשלים את המתכון ידנית.",
   invalid:
-    "הקישור אינו נראה כמו כתובת תקינה של סרטון. אפשר להדביק קישור אחר או להמשיך ידנית.",
+    "הקישור אינו נראה כמו כתובת תקינה. אפשר להדביק קישור אחר או להמשיך ידנית.",
   // Real ingredient/step extraction is not wired up yet.
   extractionInactive:
-    "ייבוא מצרכים ואופן הכנה עדיין לא פעיל. בינתיים אפשר לשמור את הסרטון ולהוסיף את הפרטים ידנית.",
+    "ייבוא מצרכים ואופן הכנה עדיין לא פעיל. בינתיים אפשר לשמור את הקישור ולהשלים את המתכון ידנית.",
 } as const;
 
 export interface RecipeImportResult {
   url: string;
-  provider: VideoProvider;
-  /** A usable video URL was recognized. */
+  provider: string;
+  /** A usable URL was recognized. */
   isValid: boolean;
-  /** Full auto-import is supported for this provider (YouTube today). */
-  fullySupported: boolean;
-  metadata: VideoMetadata;
+  status: ImportStatus;
+  metadata: RecipeMetadata;
   /** User-facing Hebrew note, or null when nothing needs to be said. */
   message: string | null;
+}
+
+function messageFor(metadata: RecipeMetadata): string | null {
+  if (metadata.status === "url-only") return IMPORT_MESSAGES.blocked;
+  if (!metadata.title) return IMPORT_MESSAGES.noTitle;
+  return null;
 }
 
 export class RecipeImportService {
   async importFromUrl(rawUrl: string): Promise<RecipeImportResult> {
     const url = rawUrl.trim();
-    const provider = detectVideoProvider(url);
+    const provider = detectProvider(url);
 
-    if (provider === "none") {
+    if (!provider) {
+      const metadata = await resolveRecipeMetadata(url);
       return {
         url,
-        provider,
+        provider: "none",
         isValid: false,
-        fullySupported: false,
-        metadata: { provider, url, videoId: null, title: null, thumbnailUrl: null },
+        status: "url-only",
+        metadata,
         message: IMPORT_MESSAGES.invalid,
       };
     }
 
-    const metadata = await resolveVideoMetadata(url);
-
-    if (provider === "youtube") {
-      return {
-        url,
-        provider,
-        isValid: true,
-        fullySupported: true,
-        metadata,
-        message: metadata.title ? null : IMPORT_MESSAGES.noTitle,
-      };
-    }
-
-    // Non-YouTube: keep the URL + best-effort thumbnail, guide to manual entry.
+    const metadata = await resolveRecipeMetadata(url);
     return {
       url,
-      provider,
+      provider: metadata.provider,
       isValid: true,
-      fullySupported: false,
+      status: metadata.status,
       metadata,
-      message: IMPORT_MESSAGES.notYouTube,
+      message: messageFor(metadata),
     };
   }
 }
@@ -81,12 +78,13 @@ export const recipeImportService = new RecipeImportService();
 
 /**
  * Build a fresh, fully-editable Recipe from imported metadata and an optional
- * AI draft. Title prefers the draft, then the video title. The data model has
- * no prepTime/servings fields, so those (when present on a draft) are folded
- * into notes rather than forcing a schema change.
+ * AI draft. Title prefers the draft, then the metadata title. A thumbnail (when
+ * available) is stored as the cover photo so the recipe has an image even for
+ * non-YouTube sources. The data model has no prepTime/servings fields, so those
+ * (when present on a draft) are folded into notes — no schema change.
  */
 export function buildImportedRecipe(opts: {
-  metadata: VideoMetadata;
+  metadata: RecipeMetadata;
   draft?: AIRecipeDraft | null;
 }): Recipe {
   const { metadata, draft } = opts;
@@ -95,18 +93,24 @@ export function buildImportedRecipe(opts: {
   const noteParts: string[] = [];
   if (draft) {
     if (draft.notes.trim()) noteParts.push(draft.notes.trim());
-    const meta: string[] = [];
-    if (draft.prepTime?.trim()) meta.push(`⏱️ זמן הכנה: ${draft.prepTime.trim()}`);
-    if (draft.servings?.trim()) meta.push(`🍽️ כמות: ${draft.servings.trim()}`);
-    if (meta.length) noteParts.push(meta.join(" · "));
+    const m: string[] = [];
+    if (draft.prepTime?.trim()) m.push(`⏱️ זמן הכנה: ${draft.prepTime.trim()}`);
+    if (draft.servings?.trim()) m.push(`🍽️ כמות: ${draft.servings.trim()}`);
+    if (m.length) noteParts.push(m.join(" · "));
+  }
+
+  // Persist the thumbnail (if any) as the main cover photo.
+  const photos: RecipePhoto[] = [];
+  if (metadata.thumbnailUrl) {
+    photos.push({ id: uid(), data: metadata.thumbnailUrl });
   }
 
   return {
     id: uid(),
     title: (draft?.title || metadata.title || "").trim(),
     category: "אחר",
-    mainPhotoId: null,
-    photos: [],
+    mainPhotoId: photos[0]?.id ?? null,
+    photos,
     ingredients: (draft?.ingredients ?? []).map((i) => ({
       id: uid(),
       name: i.name,

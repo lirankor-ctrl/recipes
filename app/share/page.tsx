@@ -148,7 +148,7 @@ export default function SharePage() {
           rel="noopener noreferrer"
           className="block text-center bg-primary-soft text-primary rounded-full py-3 font-semibold"
         >
-          ▶️ פתח סרטון מתכון
+          🔗 פתח קישור למתכון
         </a>
       )}
 

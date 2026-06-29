@@ -72,7 +72,7 @@ export default function ImportRecipePage() {
   if (initialRecipe) {
     return (
       <div>
-        <PageHeader title="מתכון מתוך סרטון" subtitle="אפשר לערוך הכול לפני השמירה" />
+        <PageHeader title="מתכון מתוך קישור" subtitle="אפשר לערוך הכול לפני השמירה" />
         <RecipeForm
           initial={initialRecipe}
           draftNotice={sampleDraft ? AI_DRAFT_SAMPLE_NOTICE : undefined}
@@ -85,13 +85,13 @@ export default function ImportRecipePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="הוספת מתכון מסרטון"
-        subtitle="הדרך המהירה להוסיף מתכון — מתחילים מקישור לסרטון"
+        title="הוספת מתכון מקישור"
+        subtitle="הדרך המהירה להוסיף מתכון — מתחילים מקישור"
       />
 
       <div className="space-y-3">
         <label className="block text-sm font-semibold">
-          הדבק קישור לסרטון מתכון
+          הדבק קישור למתכון מכל מקום
         </label>
         <input
           value={url}
@@ -99,7 +99,7 @@ export default function ImportRecipePage() {
           onKeyDown={(e) => {
             if (e.key === "Enter") runImport();
           }}
-          placeholder="https://youtube.com/…"
+          placeholder="יוטיוב, אינסטגרם, טיקטוק, פייסבוק, אתר…"
           inputMode="url"
           dir="ltr"
           className="w-full bg-surface border border-border rounded-2xl px-4 py-4 text-[15px] text-left outline-none focus:border-primary"
@@ -110,7 +110,7 @@ export default function ImportRecipePage() {
           disabled={!url.trim() || loading}
           className={primaryBtnClass("w-full text-base py-4")}
         >
-          {loading ? "מייבא…" : "📹 ייבא מהסרטון"}
+          {loading ? "מייבא…" : "🔗 ייבא מתכון"}
         </button>
       </div>
 
@@ -153,10 +153,16 @@ function ImportPreview({
           <RecipeCover
             photo={metadata.thumbnailUrl}
             videoUrl={metadata.url}
-            alt={metadata.title ?? "תצוגה מקדימה של הסרטון"}
+            alt={metadata.title ?? "תצוגה מקדימה"}
             placeholderClassName="text-5xl"
           />
         </div>
+      )}
+
+      {isValid && metadata.providerLabel && (
+        <p className="text-xs text-muted">
+          זוהה מקור: <span className="text-foreground font-medium">{metadata.providerLabel}</span>
+        </p>
       )}
 
       {metadata.title ? (
@@ -182,7 +188,7 @@ function ImportPreview({
 
       {isValid && (
         <button type="button" onClick={onContinue} className={primaryBtnClass("w-full")}>
-          המשך — שמירת הסרטון ומילוי הפרטים
+          המשך — שמירת הקישור ומילוי הפרטים
         </button>
       )}
 
@@ -190,7 +196,7 @@ function ImportPreview({
       {isValid && SHOW_DEV_AI_MOCK && (
         <div className="space-y-2 border-t border-border pt-3">
           <p className="text-[11px] text-muted">
-            כלי פיתוח בלבד — ממלא נתוני דמה ולא נתונים אמיתיים מהסרטון.
+            כלי פיתוח בלבד — ממלא נתוני דמה ולא נתונים אמיתיים מהקישור.
           </p>
           <button
             type="button"
