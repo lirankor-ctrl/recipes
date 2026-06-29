@@ -43,11 +43,26 @@ export function useAuth() {
     };
   }, []);
 
+  /**
+   * Sign up with email + password. Returns true when email confirmation is
+   * required (no session yet), false when the user is signed in immediately.
+   */
   const signUp = useCallback(async (email: string, password: string) => {
     const supabase = getSupabase();
     if (!supabase) throw new Error("Supabase לא מוגדר");
-    const { error } = await supabase.auth.signUp({ email, password });
+    // Confirmation emails link back to an existing app route (/auth), not a
+    // non-existent /auth/callback — avoids "Invalid path specified in request URL".
+    const emailRedirectTo =
+      typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo },
+    });
     if (error) throw error;
+    // With confirmation disabled a session is returned right away; with it
+    // enabled the session is null until the user verifies their email.
+    return !data.session;
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -66,5 +81,16 @@ export function useAuth() {
     await supabase.auth.signOut();
   }, []);
 
-  return { ...state, signUp, signIn, signOut };
+  const resetPassword = useCallback(async (email: string) => {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error("Supabase לא מוגדר");
+    const redirectTo =
+      typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) throw error;
+  }, []);
+
+  return { ...state, signUp, signIn, signOut, resetPassword };
 }

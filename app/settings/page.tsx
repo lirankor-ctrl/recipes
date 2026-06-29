@@ -6,6 +6,11 @@ import { getAllRecipes, replaceAllRecipes } from "@/lib/db";
 import type { BackupFile, Recipe } from "@/lib/types";
 import { downloadJson } from "@/lib/utils";
 import { useAuth } from "@/lib/useAuth";
+import {
+  backupToCloud,
+  restoreFromCloud,
+  NO_BACKUP,
+} from "@/lib/cloudBackup";
 import { PageHeader, outlineBtnClass, primaryBtnClass } from "@/components/ui";
 
 function isValidBackup(data: unknown): data is BackupFile {
@@ -18,6 +23,51 @@ export default function SettingsPage() {
   const { user, configured, signOut } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [cloudBusy, setCloudBusy] = useState<"backup" | "restore" | null>(null);
+  const [cloudMsg, setCloudMsg] = useState<{ ok: boolean; text: string } | null>(
+    null
+  );
+
+  async function onCloudBackup() {
+    if (!user) {
+      setCloudMsg({ ok: false, text: "כדי לגבות או לשחזר צריך להתחבר עם מייל" });
+      return;
+    }
+    setCloudBusy("backup");
+    setCloudMsg(null);
+    try {
+      const count = await backupToCloud();
+      setCloudMsg({ ok: true, text: `גובו ${count} מתכונים לענן בהצלחה.` });
+    } catch {
+      setCloudMsg({ ok: false, text: "הגיבוי לענן נכשל. נסו שוב." });
+    } finally {
+      setCloudBusy(null);
+    }
+  }
+
+  async function onCloudRestore() {
+    if (!user) {
+      setCloudMsg({ ok: false, text: "כדי לגבות או לשחזר צריך להתחבר עם מייל" });
+      return;
+    }
+    if (!confirm("השחזור יחליף את כל המתכונים המקומיים בגיבוי מהענן. להמשיך?")) {
+      return;
+    }
+    setCloudBusy("restore");
+    setCloudMsg(null);
+    try {
+      const count = await restoreFromCloud();
+      setCloudMsg({ ok: true, text: `שוחזרו ${count} מתכונים מהענן בהצלחה.` });
+    } catch (err) {
+      const text =
+        err instanceof Error && err.message === NO_BACKUP
+          ? "לא נמצא גיבוי בענן עבור החשבון הזה."
+          : "השחזור מהענן נכשל. נסו שוב.";
+      setCloudMsg({ ok: false, text });
+    } finally {
+      setCloudBusy(null);
+    }
+  }
 
   async function onExport() {
     const recipes = await getAllRecipes();
@@ -115,6 +165,55 @@ export default function SettingsPage() {
             }`}
           >
             {msg.text}
+          </p>
+        )}
+      </section>
+
+      {/* Cloud backup */}
+      <section className="bg-surface border border-border rounded-[var(--radius-app)] p-4 space-y-3">
+        <h2 className="font-bold">גיבוי בענן</h2>
+        {!configured ? (
+          <p className="text-sm text-muted leading-relaxed">
+            התחברות Supabase אינה מוגדרת עדיין
+          </p>
+        ) : !user ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted leading-relaxed">
+              כדי לגבות או לשחזר צריך להתחבר עם מייל
+            </p>
+            <Link href="/auth" className={primaryBtnClass("w-full")}>
+              התחברות / הרשמה
+            </Link>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted leading-relaxed">
+              גיבוי שומר את כל המתכונים שלך בחשבון בענן. שחזור מחליף את המתכונים
+              המקומיים בגיבוי האחרון מהענן.
+            </p>
+            <button
+              onClick={onCloudBackup}
+              disabled={cloudBusy !== null}
+              className={primaryBtnClass("w-full")}
+            >
+              {cloudBusy === "backup" ? "מגבה…" : "☁️ גבה לענן"}
+            </button>
+            <button
+              onClick={onCloudRestore}
+              disabled={cloudBusy !== null}
+              className={outlineBtnClass("w-full")}
+            >
+              {cloudBusy === "restore" ? "משחזר…" : "⬇️ שחזר מהענן"}
+            </button>
+          </>
+        )}
+        {cloudMsg && (
+          <p
+            className={`text-sm text-center ${
+              cloudMsg.ok ? "text-accent" : "text-red-500"
+            }`}
+          >
+            {cloudMsg.text}
           </p>
         )}
       </section>

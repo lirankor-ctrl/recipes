@@ -19,6 +19,9 @@ export const IMPORT_MESSAGES = {
     "בשלב זה ייבוא אוטומטי מלא נתמך בעיקר מיוטיוב. אפשר להמשיך למלא את המתכון ידנית.",
   invalid:
     "הקישור אינו נראה כמו כתובת תקינה של סרטון. אפשר להדביק קישור אחר או להמשיך ידנית.",
+  // Real ingredient/step extraction is not wired up yet.
+  extractionInactive:
+    "ייבוא מצרכים ואופן הכנה עדיין לא פעיל. בינתיים אפשר לשמור את הסרטון ולהוסיף את הפרטים ידנית.",
 } as const;
 
 export interface RecipeImportResult {

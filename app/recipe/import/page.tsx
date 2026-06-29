@@ -6,6 +6,7 @@ import type { Recipe } from "@/lib/types";
 import {
   recipeImportService,
   buildImportedRecipe,
+  IMPORT_MESSAGES,
   type RecipeImportResult,
 } from "@/lib/recipeImport";
 import {
@@ -14,12 +15,11 @@ import {
 } from "@/lib/aiRecipeDraft";
 import RecipeForm from "@/components/RecipeForm";
 import RecipeCover from "@/components/RecipeCover";
-import { PageHeader } from "@/components/ui";
-import {
-  primaryBtnClass,
-  softBtnClass,
-  outlineBtnClass,
-} from "@/components/ui";
+import { PageHeader, primaryBtnClass, softBtnClass, outlineBtnClass } from "@/components/ui";
+
+// The mock AI draft fabricates sample ingredients/steps — it must NEVER run for
+// normal users. It is only offered in a development build for testing the flow.
+const SHOW_DEV_AI_MOCK = process.env.NODE_ENV === "development";
 
 export default function ImportRecipePage() {
   const [url, setUrl] = useState("");
@@ -43,14 +43,17 @@ export default function ImportRecipePage() {
     }
   }
 
-  function continueManual() {
+  // Real path: carry over ONLY what we truly have — title, video URL, provider,
+  // thumbnail. Ingredients and steps stay empty (filled in manually).
+  function continueImport() {
     if (!result) return;
     setSampleDraft(false);
     setInitialRecipe(buildImportedRecipe({ metadata: result.metadata }));
   }
 
-  async function continueWithDraft() {
-    if (!result || generating) return;
+  // Development-only: prefill with the clearly-marked sample draft.
+  async function continueWithMockDraft() {
+    if (!result || generating || !SHOW_DEV_AI_MOCK) return;
     setGenerating(true);
     try {
       const draft = await aiRecipeDraftService.generateDraft({
@@ -115,8 +118,8 @@ export default function ImportRecipePage() {
         <ImportPreview
           result={result}
           generating={generating}
-          onContinueManual={continueManual}
-          onContinueDraft={continueWithDraft}
+          onContinue={continueImport}
+          onMockDraft={continueWithMockDraft}
         />
       )}
 
@@ -133,15 +136,15 @@ export default function ImportRecipePage() {
 function ImportPreview({
   result,
   generating,
-  onContinueManual,
-  onContinueDraft,
+  onContinue,
+  onMockDraft,
 }: {
   result: RecipeImportResult;
   generating: boolean;
-  onContinueManual: () => void;
-  onContinueDraft: () => void;
+  onContinue: () => void;
+  onMockDraft: () => void;
 }) {
-  const { metadata, message, isValid, fullySupported } = result;
+  const { metadata, message, isValid } = result;
 
   return (
     <section className="space-y-4 bg-surface border border-border rounded-[var(--radius-app)] p-4">
@@ -163,41 +166,42 @@ function ImportPreview({
         </div>
       ) : null}
 
+      {/* Provider-specific note (e.g. non-YouTube / no title). */}
       {message && (
         <p className="text-sm text-muted bg-primary-soft rounded-2xl px-4 py-3 leading-relaxed">
           {message}
         </p>
       )}
 
-      {fullySupported ? (
-        <div className="space-y-3">
-          <p className="text-sm font-medium leading-relaxed">
-            מצאנו את הסרטון. רוצה שאנסה ליצור ממנו טיוטת מתכון בעזרת AI?
-          </p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onContinueDraft}
-              disabled={generating}
-              className={primaryBtnClass("flex-1")}
-            >
-              {generating ? "יוצר טיוטה…" : "כן, צור טיוטה"}
-            </button>
-            <button
-              type="button"
-              onClick={onContinueManual}
-              disabled={generating}
-              className={softBtnClass("flex-1")}
-            >
-              לא, אמשיך ידנית
-            </button>
-          </div>
-        </div>
-      ) : isValid ? (
-        <button type="button" onClick={onContinueManual} className={primaryBtnClass("w-full")}>
-          המשך למילוי המתכון
+      {/* Real ingredient/step extraction is not active — be honest about it. */}
+      {isValid && (
+        <p className="text-sm text-muted bg-primary-soft rounded-2xl px-4 py-3 leading-relaxed">
+          {IMPORT_MESSAGES.extractionInactive}
+        </p>
+      )}
+
+      {isValid && (
+        <button type="button" onClick={onContinue} className={primaryBtnClass("w-full")}>
+          המשך — שמירת הסרטון ומילוי הפרטים
         </button>
-      ) : null}
+      )}
+
+      {/* Development-only sample-draft tester. Never shown to normal users. */}
+      {isValid && SHOW_DEV_AI_MOCK && (
+        <div className="space-y-2 border-t border-border pt-3">
+          <p className="text-[11px] text-muted">
+            כלי פיתוח בלבד — ממלא נתוני דמה ולא נתונים אמיתיים מהסרטון.
+          </p>
+          <button
+            type="button"
+            onClick={onMockDraft}
+            disabled={generating}
+            className={softBtnClass("w-full")}
+          >
+            {generating ? "יוצר טיוטה…" : "🧪 מלא טיוטת AI לדוגמה (פיתוח)"}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

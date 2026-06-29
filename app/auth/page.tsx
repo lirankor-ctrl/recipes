@@ -1,19 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { PageHeader, primaryBtnClass } from "@/components/ui";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { configured, signIn, signUp } = useAuth();
+  const { user, loading, configured, signIn, signUp, resetPassword } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  // After email confirmation the user returns to /auth and the Supabase client
+  // restores the session — once signed in, move on to Settings.
+  useEffect(() => {
+    if (!loading && user) router.replace("/settings");
+  }, [loading, user, router]);
+
+  async function onForgotPassword() {
+    setError("");
+    setInfo("");
+    if (!email.trim()) {
+      setError("יש להזין כתובת מייל לאיפוס הסיסמה.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await resetPassword(email.trim());
+      setInfo("אם הכתובת קיימת, שלחנו אליך מייל לאיפוס הסיסמה. בדקו את תיבת הדואר.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "אירעה שגיאה");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,8 +46,13 @@ export default function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        await signUp(email.trim(), password);
-        setInfo("נרשמת בהצלחה! ייתכן שתצטרך לאשר את כתובת המייל.");
+        const needsConfirmation = await signUp(email.trim(), password);
+        if (needsConfirmation) {
+          setInfo("נשלח אליך מייל לאימות החשבון. לאחר האימות אפשר להתחבר.");
+        } else {
+          // Email confirmation disabled — the user is already signed in.
+          router.push("/settings");
+        }
       } else {
         await signIn(email.trim(), password);
         router.push("/settings");
@@ -41,7 +70,8 @@ export default function AuthPage() {
 
       {!configured && (
         <div className="bg-primary-soft text-sm text-foreground rounded-2xl p-4 leading-relaxed">
-          התחברות עם Supabase אינה מוגדרת. הוסיפו את משתני הסביבה
+          <p className="font-semibold mb-1">התחברות Supabase אינה מוגדרת עדיין</p>
+          הוסיפו את משתני הסביבה
           <span dir="ltr" className="block font-mono text-xs mt-1">
             NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY
           </span>
@@ -93,6 +123,17 @@ export default function AuthPage() {
       >
         {mode === "login" ? "אין לך חשבון? הרשמה" : "יש לך חשבון? התחברות"}
       </button>
+
+      {mode === "login" && (
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          disabled={!configured || busy}
+          className="w-full text-sm text-muted py-1 disabled:opacity-60"
+        >
+          שכחתי סיסמה
+        </button>
+      )}
     </div>
   );
 }
