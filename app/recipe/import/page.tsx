@@ -6,6 +6,7 @@ import type { Recipe } from "@/lib/types";
 import {
   recipeImportService,
   buildImportedRecipe,
+  providerFallbackTitle,
   IMPORT_MESSAGES,
   type RecipeImportResult,
 } from "@/lib/recipeImport";
@@ -20,6 +21,16 @@ import { PageHeader, primaryBtnClass, softBtnClass, outlineBtnClass } from "@/co
 // The mock AI draft fabricates sample ingredients/steps — it must NEVER run for
 // normal users. It is only offered in a development build for testing the flow.
 const SHOW_DEV_AI_MOCK = process.env.NODE_ENV === "development";
+
+// Emoji per source for the clean placeholder shown when no thumbnail exists.
+const PROVIDER_ICON: Record<string, string> = {
+  youtube: "▶️",
+  facebook: "📘",
+  instagram: "📷",
+  tiktok: "🎵",
+  vimeo: "🎬",
+  web: "🌐",
+};
 
 export default function ImportRecipePage() {
   const [url, setUrl] = useState("");
@@ -144,20 +155,35 @@ function ImportPreview({
   onContinue: () => void;
   onMockDraft: () => void;
 }) {
-  const { metadata, message, isValid } = result;
+  const { metadata, message, isValid, status } = result;
+  const hasThumb = Boolean(metadata.thumbnailUrl);
+  // What the saved title will be (real title, or a friendly provider fallback).
+  const previewTitle = metadata.title ?? providerFallbackTitle(metadata);
 
   return (
     <section className="space-y-4 bg-surface border border-border rounded-[var(--radius-app)] p-4">
-      {isValid && (
-        <div className="aspect-[16/10] bg-primary-soft rounded-2xl overflow-hidden">
-          <RecipeCover
-            photo={metadata.thumbnailUrl}
-            videoUrl={metadata.url}
-            alt={metadata.title ?? "תצוגה מקדימה"}
-            placeholderClassName="text-5xl"
-          />
-        </div>
-      )}
+      {isValid &&
+        (hasThumb ? (
+          <div className="aspect-[16/10] bg-primary-soft rounded-2xl overflow-hidden">
+            <RecipeCover
+              photo={metadata.thumbnailUrl}
+              videoUrl={metadata.url}
+              alt={metadata.title ?? "תצוגה מקדימה"}
+              placeholderClassName="text-5xl"
+            />
+          </div>
+        ) : (
+          // Clean provider placeholder when no image is available.
+          <div className="aspect-[16/10] bg-primary-soft rounded-2xl flex flex-col items-center justify-center gap-1 text-primary">
+            <span className="text-5xl" aria-hidden="true">
+              {PROVIDER_ICON[metadata.provider] ?? "🔗"}
+            </span>
+            <span className="text-sm font-medium">
+              {metadata.providerLabel || "קישור"}
+            </span>
+            <span className="text-xs text-muted">קישור שמור</span>
+          </div>
+        ))}
 
       {isValid && metadata.providerLabel && (
         <p className="text-xs text-muted">
@@ -165,25 +191,40 @@ function ImportPreview({
         </p>
       )}
 
-      {metadata.title ? (
+      {isValid && (
         <div>
-          <p className="text-xs text-muted mb-1">שם המתכון שזוהה</p>
-          <p className="font-semibold leading-snug">{metadata.title}</p>
+          <p className="text-xs text-muted mb-1">שם המתכון</p>
+          <p className="font-semibold leading-snug">{previewTitle}</p>
+          {!metadata.title && (
+            <p className="text-xs text-muted mt-1">שם זמני — אפשר לשנות בהמשך.</p>
+          )}
         </div>
-      ) : null}
+      )}
 
-      {/* Provider-specific note (e.g. non-YouTube / no title). */}
+      {/* Provider-specific note (blocked source / no title). */}
       {message && (
         <p className="text-sm text-muted bg-primary-soft rounded-2xl px-4 py-3 leading-relaxed">
           {message}
         </p>
       )}
 
-      {/* Real ingredient/step extraction is not active — be honest about it. */}
-      {isValid && (
+      {/* When metadata came through, remind that ingredients/steps stay manual. */}
+      {isValid && status !== "url-only" && (
         <p className="text-sm text-muted bg-primary-soft rounded-2xl px-4 py-3 leading-relaxed">
           {IMPORT_MESSAGES.extractionInactive}
         </p>
+      )}
+
+      {/* Open the original link so the user can watch/read and fill details. */}
+      {isValid && (
+        <a
+          href={metadata.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={softBtnClass("w-full")}
+        >
+          ↗️ פתח את הקישור המקורי
+        </a>
       )}
 
       {isValid && (

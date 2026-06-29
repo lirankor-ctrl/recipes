@@ -20,13 +20,28 @@ export const IMPORT_MESSAGES = {
   noTitle:
     "מצאנו את הקישור, אך לא הצלחנו למשוך שם למתכון. אפשר להוסיף שם ידנית.",
   blocked:
-    "מצאנו את הקישור, אבל האתר לא מאפשר למשוך את כל הפרטים. אפשר לשמור את הקישור ולהשלים את המתכון ידנית.",
+    "מצאנו את הקישור. האתר לא מאפשר למשוך את הפרטים אוטומטית, אבל אפשר לשמור את המתכון ולהשלים ידנית.",
   invalid:
     "הקישור אינו נראה כמו כתובת תקינה. אפשר להדביק קישור אחר או להמשיך ידנית.",
   // Real ingredient/step extraction is not wired up yet.
   extractionInactive:
     "ייבוא מצרכים ואופן הכנה עדיין לא פעיל. בינתיים אפשר לשמור את הקישור ולהשלים את המתכון ידנית.",
 } as const;
+
+// Provider-specific fallback title used when no real title could be extracted.
+const PROVIDER_FALLBACK_TITLE: Record<string, string> = {
+  youtube: "מתכון מיוטיוב",
+  facebook: "מתכון מפייסבוק",
+  instagram: "מתכון מאינסטגרם",
+  tiktok: "מתכון מטיקטוק",
+  vimeo: "מתכון מ-Vimeo",
+  web: "מתכון מהאתר",
+};
+
+/** A human-friendly fallback title based on the detected source. */
+export function providerFallbackTitle(metadata: RecipeMetadata): string {
+  return PROVIDER_FALLBACK_TITLE[metadata.provider] ?? "מתכון מקישור";
+}
 
 export interface RecipeImportResult {
   url: string;
@@ -107,7 +122,8 @@ export function buildImportedRecipe(opts: {
 
   return {
     id: uid(),
-    title: (draft?.title || metadata.title || "").trim(),
+    // Always end up with a usable title: draft → real metadata → provider name.
+    title: (draft?.title || metadata.title || providerFallbackTitle(metadata)).trim(),
     category: "אחר",
     mainPhotoId: photos[0]?.id ?? null,
     photos,
