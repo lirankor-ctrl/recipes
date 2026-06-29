@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Recipe } from "@/lib/types";
 import Stars from "./Stars";
+import RecipeCover from "./RecipeCover";
 
 function mainPhoto(recipe: Recipe): string | null {
   if (recipe.mainPhotoId) {
@@ -20,18 +21,11 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
       className="block bg-surface rounded-[var(--radius-app)] border border-border overflow-hidden shadow-sm shadow-primary/5 active:scale-[0.99] transition-transform"
     >
       <div className="aspect-[16/10] bg-primary-soft relative">
-        {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photo}
-            alt={recipe.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-primary/50 text-3xl">
-            🍳
-          </div>
-        )}
+        <RecipeCover
+          photo={photo}
+          videoUrl={recipe.videoUrl}
+          alt={recipe.title}
+        />
         <span className="absolute top-2 start-2 bg-surface/90 text-foreground text-xs font-medium px-2.5 py-1 rounded-full">
           {recipe.category}
         </span>

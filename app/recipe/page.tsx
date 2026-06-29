@@ -8,6 +8,7 @@ import type { Recipe } from "@/lib/types";
 import { cookedLabel, now } from "@/lib/utils";
 import { buildShareUrl } from "@/lib/share";
 import Stars from "@/components/Stars";
+import RecipeCover from "@/components/RecipeCover";
 import { EmptyState, PrimaryLink, primaryBtnClass, softBtnClass } from "@/components/ui";
 
 export default function RecipePageWrapper() {
@@ -91,11 +92,15 @@ function RecipeDetail() {
 
   return (
     <div className="space-y-6 pb-4">
-      {/* Hero photo */}
-      {mainPhoto ? (
+      {/* Hero cover: photo → video thumbnail → placeholder */}
+      {mainPhoto || recipe.videoUrl.trim() ? (
         <div className="-mx-4 -mt-3 aspect-[16/10] bg-primary-soft overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mainPhoto} alt={recipe.title} className="w-full h-full object-cover" />
+          <RecipeCover
+            photo={mainPhoto}
+            videoUrl={recipe.videoUrl}
+            alt={recipe.title}
+            placeholderClassName="text-5xl"
+          />
         </div>
       ) : null}
 

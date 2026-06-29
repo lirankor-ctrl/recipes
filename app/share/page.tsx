@@ -6,6 +6,7 @@ import { decodeShare, payloadToRecipe } from "@/lib/share";
 import { addRecipes } from "@/lib/db";
 import type { SharedRecipePayload } from "@/lib/types";
 import Stars from "@/components/Stars";
+import RecipeCover from "@/components/RecipeCover";
 import { cookedLabel } from "@/lib/utils";
 import { EmptyState, PrimaryLink, primaryBtnClass } from "@/components/ui";
 
@@ -67,10 +68,14 @@ export default function SharePage() {
         מתכון ששותף איתך — תצוגה בלבד
       </div>
 
-      {mainPhoto && (
+      {(mainPhoto || payload.videoUrl?.trim()) && (
         <div className="-mx-4 aspect-[16/10] bg-primary-soft overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mainPhoto} alt={payload.title} className="w-full h-full object-cover" />
+          <RecipeCover
+            photo={mainPhoto}
+            videoUrl={payload.videoUrl}
+            alt={payload.title}
+            placeholderClassName="text-5xl"
+          />
         </div>
       )}
 
