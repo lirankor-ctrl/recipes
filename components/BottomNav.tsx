@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const items = [
   { href: "/", label: "בית", icon: HomeIcon },
   { href: "/recipes", label: "המתכונים שלי", icon: BookIcon },
-  { href: "/recipe/new", label: "הוסף מתכון", icon: PlusIcon },
+  { href: "/recipe/import", label: "הוסף מתכון", icon: PlusIcon },
   { href: "/settings", label: "הגדרות", icon: GearIcon },
 ];
 

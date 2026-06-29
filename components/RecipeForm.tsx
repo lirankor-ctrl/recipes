@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   RECIPE_CATEGORIES,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/types";
 import { putRecipe } from "@/lib/db";
 import { uid, now, fileToResizedDataUrl } from "@/lib/utils";
+import { resolveRecipeTitle } from "@/lib/recipeTitle";
 import Stars from "./Stars";
 import {
   primaryBtnClass,
@@ -39,22 +40,38 @@ function emptyRecipe(): Recipe {
   };
 }
 
-export default function RecipeForm({ initial }: { initial?: Recipe }) {
+export default function RecipeForm({
+  initial,
+  draftNotice,
+}: {
+  initial?: Recipe;
+  /** Optional banner (e.g. "sample AI draft — review before saving"). */
+  draftNotice?: string;
+}) {
   const router = useRouter();
   const [r, setR] = useState<Recipe>(initial ?? emptyRecipe());
   const [saving, setSaving] = useState(false);
   const isEdit = Boolean(initial);
 
-  // DOM id of a freshly added field to focus once it has rendered.
-  const [focusFieldId, setFocusFieldId] = useState<string | null>(null);
+  // DOM id of a freshly added field to focus once it has rendered. Held in a
+  // ref (not state) so the effect can clear it without a cascading re-render;
+  // a tick schedules the effect.
+  const pendingFocusId = useRef<string | null>(null);
+  const [focusTick, setFocusTick] = useState(0);
 
   const patch = (p: Partial<Recipe>) => setR((prev) => ({ ...prev, ...p }));
 
+  function scheduleFocus(id: string) {
+    pendingFocusId.current = id;
+    setFocusTick((t) => t + 1);
+  }
+
   useEffect(() => {
-    if (!focusFieldId) return;
-    document.getElementById(focusFieldId)?.focus();
-    setFocusFieldId(null);
-  }, [focusFieldId]);
+    const id = pendingFocusId.current;
+    if (!id) return;
+    pendingFocusId.current = null;
+    document.getElementById(id)?.focus();
+  }, [focusTick]);
 
   // ---- Photos ----
   async function onAddPhotos(files: FileList | null) {
@@ -92,7 +109,7 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
     const item: Ingredient = { id: uid(), name: "", quantity: "" };
     patch({ [key]: [...r[key], item] } as Partial<Recipe>);
     // focus the new ingredient's name input right away
-    setFocusFieldId(`ingname-${item.id}`);
+    scheduleFocus(`ingname-${item.id}`);
   }
   function updateIngredient(
     key: "ingredients" | "laterIngredients",
@@ -116,7 +133,7 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
     const s: PreparationStep = { id: uid(), text: "" };
     patch({ steps: [...r.steps, s] });
     // focus the new step's text field right away
-    setFocusFieldId(`step-${s.id}`);
+    scheduleFocus(`step-${s.id}`);
   }
   function updateStep(id: string, text: string) {
     patch({ steps: r.steps.map((s) => (s.id === id ? { ...s, text } : s)) });
@@ -133,14 +150,13 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
   }
 
   async function onSubmit() {
-    if (!r.title.trim()) {
-      alert("יש להזין שם למתכון");
-      return;
-    }
     setSaving(true);
+    // Title never blocks saving — derive one when left empty (existing titles
+    // are kept as-is and never overwritten).
+    const title = await resolveRecipeTitle(r);
     const clean: Recipe = {
       ...r,
-      title: r.title.trim(),
+      title,
       ingredients: r.ingredients.filter((i) => i.name.trim()),
       laterIngredients: r.laterIngredients.filter((i) => i.name.trim()),
       steps: r.steps.filter((s) => s.text.trim()),
@@ -157,14 +173,24 @@ export default function RecipeForm({ initial }: { initial?: Recipe }) {
 
   return (
     <div className="space-y-6">
-      {/* Title */}
-      <Field label="שם המתכון">
+      {draftNotice && (
+        <div className="flex items-start gap-2 bg-accent-soft border border-accent/40 text-foreground rounded-2xl px-4 py-3 text-sm">
+          <span aria-hidden="true">🤖</span>
+          <span className="font-medium leading-relaxed">{draftNotice}</span>
+        </div>
+      )}
+
+      {/* Title (optional — derived automatically when left empty) */}
+      <Field label="שם המתכון (לא חובה)">
         <input
           value={r.title}
           onChange={(e) => patch({ title: e.target.value })}
           placeholder="למשל: עוגת שוקולד של סבתא"
           className={inputClass}
         />
+        <p className="text-xs text-muted mt-1.5">
+          אפשר להשאיר ריק — נשלים שם אוטומטית, ותמיד אפשר לערוך.
+        </p>
       </Field>
 
       {/* Category */}

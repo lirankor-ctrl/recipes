@@ -2,6 +2,41 @@
 // Every function is defensive: it never throws and returns null when it
 // cannot produce a usable thumbnail, so the UI can fall back to a placeholder.
 
+/**
+ * Known video providers. "other" = a valid URL from an unrecognized host,
+ * "none" = empty / unparseable input. New hosts can be added here as the
+ * import flow grows (Instagram, TikTok, Facebook, Vimeo, …).
+ */
+export type VideoProvider =
+  | "youtube"
+  | "vimeo"
+  | "instagram"
+  | "tiktok"
+  | "facebook"
+  | "other"
+  | "none";
+
+/** Classify a video URL by provider without throwing. */
+export function detectVideoProvider(url: string): VideoProvider {
+  if (!url || !url.trim()) return "none";
+  let host: string;
+  try {
+    host = new URL(url.trim()).hostname.replace(/^www\./, "");
+  } catch {
+    return "none";
+  }
+  if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com")) {
+    return "youtube";
+  }
+  if (host === "vimeo.com" || host.endsWith(".vimeo.com")) return "vimeo";
+  if (host === "instagram.com" || host.endsWith(".instagram.com")) return "instagram";
+  if (host === "tiktok.com" || host.endsWith(".tiktok.com")) return "tiktok";
+  if (host === "facebook.com" || host.endsWith(".facebook.com") || host === "fb.watch") {
+    return "facebook";
+  }
+  return "other";
+}
+
 /** YouTube ids are always 11 url-safe characters. */
 function isYouTubeId(id: string): boolean {
   return /^[\w-]{11}$/.test(id);

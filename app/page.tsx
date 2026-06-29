@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { getAllRecipes } from "@/lib/db";
 import type { Recipe } from "@/lib/types";
 import RecipeCard from "@/components/RecipeCard";
@@ -101,10 +102,34 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Add recipe CTA */}
-      <div className="flex justify-center pt-1">
-        <PrimaryLink href="/recipe/new">+ הוסף מתכון חדש</PrimaryLink>
-      </div>
+      {/* Add recipe CTA — video import is the primary action */}
+      <section className="space-y-3">
+        <Link
+          href="/recipe/import"
+          className="flex items-center gap-4 bg-primary text-white rounded-[var(--radius-app)] p-5 shadow-sm shadow-primary/25 active:bg-primary-hover transition-colors"
+        >
+          <span className="text-3xl" aria-hidden="true">
+            📹
+          </span>
+          <span className="flex-1">
+            <span className="block font-bold text-lg leading-tight">
+              הוסף מתכון מסרטון
+            </span>
+            <span className="block text-sm text-white/80 mt-0.5">
+              הדבק קישור ליוטיוב — אנחנו נתחיל בשבילך
+            </span>
+          </span>
+          <span className="text-2xl" aria-hidden="true">
+            ←
+          </span>
+        </Link>
+        <Link
+          href="/recipe/new"
+          className="flex items-center justify-center gap-2 bg-surface border border-border rounded-[var(--radius-app)] py-3.5 font-semibold text-foreground active:bg-primary-soft transition-colors"
+        >
+          ✍️ הוסף מתכון ידנית
+        </Link>
+      </section>
     </div>
   );
 }
