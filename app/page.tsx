@@ -46,20 +46,18 @@ export default function HomePage() {
 
   return (
     <div className="space-y-7">
-      {/* Welcome header */}
-      <header className="flex items-center gap-3 pt-1">
+      {/* Hero header */}
+      <header className="flex flex-col items-center text-center pt-8 pb-2">
         <Image
           src="/logo.png"
           alt="מתכונים"
-          width={48}
-          height={48}
-          className="rounded-2xl"
+          width={100}
+          height={100}
+          className="w-20 sm:w-24 h-auto rounded-3xl"
           priority
         />
-        <div>
-          <h1 className="text-2xl font-bold leading-tight">מתכונים</h1>
-          <p className="text-sm text-muted">המטבח האישי שלך, במקום אחד</p>
-        </div>
+        <h1 className="mt-6 text-3xl font-bold tracking-tight">מתכונים</h1>
+        <p className="mt-2 text-base text-muted">כל המתכונים שלך. במקום אחד.</p>
       </header>
 
       {/* Top recipes */}
